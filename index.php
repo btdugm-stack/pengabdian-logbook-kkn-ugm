@@ -167,7 +167,7 @@ function layout_start($title = null) {
       <div class="logo">K</div>
       <div>
         <h1>Pengabdian:<br>Logbook KKN</h1>
-        <p>PoC siap deploy Laragon</p>
+        <p>PoC - Biro Transformasi Digital</p>
       </div>
     </div>
 
