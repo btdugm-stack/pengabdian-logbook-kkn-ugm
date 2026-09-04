@@ -1,34 +1,47 @@
-# PoC Pengabdian: Logbook KKN v2 Sidebar
+# Pengabdian: Logbook KKN UGM
 
-Perbaikan:
-- Menu utama menjadi sidebar.
-- Role umum tanpa login memiliki menu:
-  - Search Mahasiswa
-  - Search Logbook
-  - View Peta
-- Search Mahasiswa membaca keseluruhan data mahasiswa dari database.
-- Search Logbook membaca keseluruhan data logbook dan relasi mahasiswa.
+Aplikasi logbook, presensi, dan monitoring kesehatan peserta **KKN-PPM UGM** — rewrite Laravel dari PoC PHP (lihat `git log` untuk sejarah PoC asli).
 
-## Cara Deploy di Laragon
+## Stack
 
-1. Extract folder `poc-logbook-kkn-laragon-v2-sidebar` ke:
-   `C:\laragon\www\`
+- **Laravel 13** (PHP 8.3+) · **Livewire 4** · MySQL 8 · Tailwind 4 + Vite
+- SSO **Google** (domain `@ugm.ac.id`) dengan fallback demo login di env `local`
+- RBAC: `mahasiswa`, `kormasit`, `korcam`, `dpl`, `admin_she`, `admin_lppm` (spatie/permission) — supervisi dibatasi scope wilayah (kabupaten → kecamatan → desa → sub-unit)
+- Notifikasi eskalasi kesehatan (DB + mail), peta Leaflet, grafik Chart.js, backup (spatie/laravel-backup), Sentry (DSN kosong = nonaktif)
 
-2. Jalankan Apache dan MySQL di Laragon.
+## Fitur utama
 
-3. Import `database.sql` ke MySQL/phpMyAdmin.
+- **Presensi harian**: check-in/out + kondisi kesehatan (Sehat/Sakit Ringan/Sakit Berat/Izin/Alpha); 1 baris per mahasiswa per hari (unique constraint)
+- **Logbook**: input kegiatan dengan master data dinamis (tema/program/jenis/lokasi baru otomatis jadi opsi dropdown); kondisi kesehatan diambil dari presensi hari itu; wajib presensi dulu sebelum submit
+- **Presensi bantuan**: antar-mahasiswa, disetujui/ditolak oleh pemilik program (ditegakkan server-side)
+- **Overview wilayah** (supervisi): KPI harian, tren 14 hari, peta, daftar status; scope query dibatasi cakupan akun
+- **Publik tanpa login**: search mahasiswa & logbook (tanpa data kesehatan/PII), peta netral (kondisi kesehatan tidak ditampilkan)
 
-4. Buka:
-   `http://localhost/poc-logbook-kkn-laragon-v2-sidebar`
+## Setup lokal (Laragon)
 
-## Login Simulasi SSO Google
+```bash
+composer install
+cp .env.example .env          # lalu sesuaikan DB_*, APP_TIMEZONE (Asia/Jakarta)
+php artisan key:generate
+php artisan migrate --seed    # demo: 11 mahasiswa/supervisi + data contoh
+npm install && npm run build
+php artisan serve --port 8010
+```
 
-- azmi@student.demo
-- alya@student.demo
-- nadi@student.demo
-- rafi@student.demo
-- dimas@student.demo
-- mira@student.demo
+Demo login muncul di halaman `/login` hanya saat `APP_ENV=local` **dan** `DEMO_LOGIN_ENABLED=true`.
+Akun contoh: mahasiswa `azmi@student.demo`; supervisi `kormasit.5a@demo.kkn`, `korcam.cangkringan@demo.kkn`, `dpl@demo.kkn`, `she@demo.kkn`, `lppm@demo.kkn`.
 
-## Catatan
-SSO Google masih simulasi agar bisa langsung digunakan. Untuk production, integrasikan Google OAuth 2.0.
+## Test
+
+```bash
+php artisan test   # 25 tes (SQLite :memory:) — RBAC, privasi publik, XSS, presensi
+vendor/bin/pint    # code style
+```
+
+## Dokumentasi audit
+
+Hasil audit keamanan + daftar perbaikan yang sudah dieksekusi & diverifikasi: **[AUDIT-REPORT.md](AUDIT-REPORT.md)**.
+
+## Catatan produksi
+
+Isi `GOOGLE_CLIENT_ID/SECRET`, set `APP_ENV=production`, `APP_DEBUG=false`, aktifkan `extension=zip`, lalu `php artisan config:cache`.
