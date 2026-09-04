@@ -2,7 +2,7 @@
 // ini membuat app shell instalable dan aset statis bisa dibaca offline,
 // TAPI TIDAK mengantrekan submit presensi/logbook Livewire saat offline
 // (lihat offline-banner di layouts/app.blade.php untuk itu).
-const CACHE_NAME = 'logbook-kkn-v1';
+const CACHE_NAME = 'logbook-kkn-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {

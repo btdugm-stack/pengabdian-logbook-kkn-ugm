@@ -43,46 +43,51 @@
 
 <div class="card" style="margin-top:18px">
   <h2>Tren Kondisi 14 Hari Terakhir</h2>
-  <canvas id="trendChart" height="80"></canvas>
+  <div class="chart-wrap">
+    <canvas id="trendChart"></canvas>
+  </div>
 </div>
 
-<div class="grid grid-2" style="margin-top:18px">
-  <div class="card">
+<div class="card" style="margin-top:18px">
+  <div class="card-head">
     <h2>Peta Sub-unit</h2>
-    <div id="map"></div>
-  </div>
-  <div class="card">
-    <h2>Legenda</h2>
-    <p>
+    <div class="legend">
       <x-pill class="pill-normal">Sehat</x-pill>
       <x-pill class="pill-sick">Sakit</x-pill>
       <x-pill class="pill-warn">Izin/Alpha</x-pill>
-    </p>
-    <h3>Daftar Mahasiswa</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Nama</th><th>Wilayah</th><th>Status Hari Ini</th><th>Check-in</th></tr></thead>
-        <tbody>
-          @forelse ($students as $s)
-            @php $att = $todayAttendances->get($s->id) @endphp
-            <tr>
-              <td><strong>{{ $s->name }}</strong></td>
-              <td><small>{{ $s->region?->fullPath() }}</small></td>
-              <td>
-                @if ($att)
-                  <x-pill :class="$att->conditionPillClass()">{{ $att->condition }}</x-pill>
-                @else
-                  <x-pill class="pill-warn">Belum presensi</x-pill>
-                @endif
-              </td>
-              <td>{{ $att?->check_in_time?->format('H:i') ?? '-' }}</td>
-            </tr>
-          @empty
-            <tr><td colspan="4">Tidak ada mahasiswa pada wilayah ini.</td></tr>
-          @endforelse
-        </tbody>
-      </table>
     </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="card-head">
+    <h2>Daftar Mahasiswa</h2>
+    <span class="hint" style="margin:0">{{ $students->count() }} mahasiswa</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nama</th><th>Wilayah</th><th>Status Hari Ini</th><th>Check-in</th></tr></thead>
+      <tbody>
+        @forelse ($students as $s)
+          @php $att = $todayAttendances->get($s->id) @endphp
+          <tr>
+            <td><strong>{{ $s->name }}</strong></td>
+            <td><small>{{ $s->region?->fullPath() }}</small></td>
+            <td class="nowrap">
+              @if ($att)
+                <x-pill :class="$att->conditionPillClass()">{{ $att->condition }}</x-pill>
+              @else
+                <x-pill class="pill-warn">Belum presensi</x-pill>
+              @endif
+            </td>
+            <td class="nowrap">{{ $att?->check_in_time?->format('H:i') ?? '-' }}</td>
+          </tr>
+        @empty
+          <tr><td colspan="4">Tidak ada mahasiswa pada wilayah ini.</td></tr>
+        @endforelse
+      </tbody>
+    </table>
   </div>
 </div>
 @endsection
@@ -140,8 +145,16 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     options: {
       responsive: true,
-      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
-      plugins: { legend: { position: 'bottom' } },
+      // maintainAspectRatio:false wajib dipasang berbarengan dengan .chart-wrap
+      // yang punya height CSS tetap (lihat app.css) - tanpa ini Chart.js
+      // menghitung tinggi dari lebar / aspectRatio, jadi di HP yang sempit
+      // grafiknya jadi pipih ~170px dan 14 label tanggal saling tumpuk.
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, ticks: { autoSkip: true, maxRotation: 60, minRotation: 0 } },
+        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+      },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } } },
     },
   });
 });

@@ -6,119 +6,231 @@
 @source '../../app/Livewire/**/*.php';
 
 @theme {
-    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 /*
- * Design system - navy/ocean/gold diwarisi dari PoC lama (lihat §UI/UX audit),
- * tipografi & kepadatan diperbarui mengikuti redesign yang disetujui di
- * Claude Design canvas (Sep 2026). Tailwind di atas dipakai untuk komponen
- * baru, bukan menggantikan token ini - semua halaman berbagi kelas yang
- * sama supaya tone-nya seragam begitu file ini berubah.
+ * Design system - tone identitas Universitas Gadjah Mada.
+ *
+ * CATATAN WARNA: brand.ugm.ac.id menyebut warna utama UGM sebagai Biru UGM
+ * (PANTONE P117-16C), Kuning UGM (PANTONE P7-8C) dan hitam, TAPI tidak
+ * memublikasikan nilai HEX-nya. Nilai di bawah adalah PERKIRAAN dari
+ * spesifikasi PANTONE itu - kalau tim punya brand book resmi, cukup ganti
+ * 4 baris --ugm-* di bawah dan seluruh aplikasi ikut berubah.
+ *
+ * ATURAN PAKAI KUNING: kuning cerah di atas putih hanya ~1.7:1 kontrasnya,
+ * jadi --ugm-gold TIDAK PERNAH dipakai sebagai warna teks di latar terang -
+ * hanya sebagai fill/aksen dengan teks biru gelap di atasnya. Untuk teks
+ * bernuansa emas di latar terang, pakai --ugm-gold-ink.
  */
 :root{
-  --navy:#0B3A5B;
-  --ocean:#176B9A;
-  --gold:#D99A21;
-  --bg:#F5F8FC;
-  --ink:#17324D;
-  --muted:#64748B;
-  --border:#E2E8F0;
-  --soft:#EAF6FF;
+  --ugm-blue:#003D7C;
+  --ugm-blue-deep:#00294F;
+  --ugm-blue-soft:#E8F0F9;
+  --ugm-gold:#FFC72C;
+  --ugm-gold-ink:#8A5A00;
+
+  /* Alias lama supaya kelas & inline style yang sudah ada tetap jalan */
+  --navy:var(--ugm-blue);
+  --ocean:#1160A8;
+  --gold:var(--ugm-gold);
+  --soft:var(--ugm-blue-soft);
+
+  --bg:#F4F7FB;
+  --ink:#16283D;
+  --muted:#5D6B7E;
+  --border:#E1E8F0;
   --success:#059669;
   --danger:#E11D48;
   --warn:#D97706;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Plus Jakarta Sans',Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Jaga-jaga supaya tidak ada elemen yang bikin scroll horizontal muncul di HP.
+   PAKAI clip, BUKAN hidden: overflow-x:hidden pada html/body memicu aturan CSS
+   "overflow-x != visible & overflow-y == visible -> overflow-y jadi auto",
+   yang diam-diam mengubah html & body jadi scroll container sendiri dan
+   MERUSAK position:sticky di seluruh halaman (topbar & sidebar tidak lagi
+   nempel saat discroll - baru ketahuan lewat screenshot bug sidebar "bocor").
+   overflow-x:clip dikecualikan dari aturan itu, jadi aman dipakai di sini. */
+html,body{overflow-x:clip;max-width:100%}
+body{margin:0;font-family:'Figtree',Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
-.shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+
+/* ============ SHELL & SIDEBAR (collapsible) ============ */
+.shell{display:grid;grid-template-columns:270px 1fr;min-height:100vh;transition:grid-template-columns .18s ease}
+html.sidebar-collapsed .shell{grid-template-columns:76px 1fr}
+
+/* Bug: latar sidebar "bocor" (berhenti sebelum akhir kolom) saat halaman
+   discroll di form panjang. Sebabnya: .sidebar dulu langsung diberi
+   position:sticky + height:100vh - itu membuatnya TIDAK stretch mengikuti
+   tinggi baris grid (karena punya ukuran definit sendiri), dan begitu grid
+   row lebih tinggi dari 100vh (form panjang), Chrome menghitung containing
+   block sticky dari kotak sidebar itu sendiri (100vh) alih-alih dari area
+   grid (lebih tinggi) - hasilnya sidebar lepas dari "stuck" pas discroll dan
+   sisa kolom di bawahnya menampakkan latar body, bukan biru.
+   Perbaikan: pisahkan dua tanggung jawab jadi dua elemen. .sidebar (aside)
+   sekarang polos, height:auto -> otomatis stretch mengikuti tinggi baris
+   grid = tinggi .content persis berapa pun panjangnya, jadi latarnya PASTI
+   menutupi seluruh kolom, tidak pernah bocor. .sidebar-inner (div di
+   dalamnya) yang sticky+height:100vh, menahan seluruh nav supaya tetap
+   terlihat di layar saat discroll. */
 .sidebar{
-  background:linear-gradient(180deg,var(--navy),#082C46);
+  background:linear-gradient(180deg,var(--ugm-blue),var(--ugm-blue-deep));
   color:#fff;
-  padding:20px 18px;
+}
+.sidebar-inner{
   position:sticky;
   top:0;
   height:100vh;
-  overflow:auto;
+  padding:18px 14px;
+  overflow-x:hidden;
+  overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:4px;
 }
-.brand{display:flex;gap:12px;align-items:center;padding:6px 6px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
-.logo{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0}
-.brand h1{font-size:15px;margin:0;line-height:1.15;font-weight:800}
-.brand p{font-size:12px;margin:2px 0 0;color:rgba(255,255,255,.55);line-height:1.35}
+.brand{display:flex;gap:11px;align-items:center;padding:4px 4px 16px;border-bottom:1px solid rgba(255,255,255,.13)}
+/* Logo resmi UGM - latar putih WAJIB karena logonya sendiri berwarna biru
+   tua, tanpa itu akan hilang ditelan gradasi biru sidebar/landing. */
+.logo{width:40px;height:40px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:5px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.logo img{width:100%;height:100%;object-fit:contain;display:block}
+.brand-text{min-width:0;flex:1}
+.brand h1{font-size:15px;margin:0;line-height:1.15;font-weight:800;white-space:nowrap}
+.brand p{font-size:11.5px;margin:2px 0 0;color:rgba(255,255,255,.58);line-height:1.3;white-space:nowrap}
+.sidebar-toggle{
+  width:30px;height:30px;flex-shrink:0;border:0;border-radius:9px;cursor:pointer;
+  background:rgba(255,255,255,.10);color:#fff;display:flex;align-items:center;justify-content:center;
+}
+.sidebar-toggle:hover{background:rgba(255,255,255,.2)}
 
-.role-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin:16px 0 4px}
-.avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
-.role-card .name{color:#fff;font-weight:700;font-size:14px;line-height:1.3}
-.role-card .desc{font-size:12px;color:rgba(255,255,255,.58);line-height:1.3}
+.role-card{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:14px 0 6px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--ugm-gold);color:var(--ugm-blue-deep);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13.5px;flex-shrink:0}
+.role-card .name{color:#fff;font-weight:700;font-size:13.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role-card .desc{font-size:11.5px;color:rgba(255,255,255,.58);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.nav-group{margin-top:14px}
-.nav-title{font-size:11px;color:rgba(255,255,255,.42);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin:0 10px 8px}
-.menu{display:flex;flex-direction:column;gap:4px}
-.menu a,.menu button{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:13px;font-size:14px;font-weight:600;color:rgba(255,255,255,.80);cursor:pointer;background:none;border:0;width:100%;text-align:left;font-family:inherit}
-.menu a:hover,.menu button:hover,.menu a.active{background:#fff;color:var(--navy)}
-.menu a.active{font-weight:700}
-.menu .icon{width:20px;text-align:center;flex-shrink:0}
-.badge{background:var(--danger);color:#fff;font-size:11px;font-weight:800;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
+.nav-group{margin-top:12px}
+.nav-title{font-size:10.5px;color:rgba(255,255,255,.40);text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin:0 10px 7px;white-space:nowrap}
+.menu{display:flex;flex-direction:column;gap:3px}
+.menu a,.menu button{
+  display:flex;align-items:center;gap:11px;min-height:42px;padding:9px 12px;border-radius:11px;
+  font-size:13.5px;font-weight:600;color:rgba(255,255,255,.80);cursor:pointer;background:none;border:0;
+  width:100%;text-align:left;font-family:inherit;
+}
+/* .menu button{display:flex} adalah aturan author, jadi otomatis mengalahkan
+   default UA [hidden]{display:none} - tanpa baris ini, atribut `hidden`
+   (dipakai tombol instal PWA) tidak akan benar-benar menyembunyikan apa pun. */
+.menu [hidden]{display:none}
+.menu a:hover,.menu button:hover{background:rgba(255,255,255,.10);color:#fff}
+.menu a.active{background:#fff;color:var(--ugm-blue);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.16)}
+.menu .icon{width:20px;text-align:center;flex-shrink:0;font-size:15px}
+.menu .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{background:var(--danger);color:#fff;font-size:10.5px;font-weight:800;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;margin-left:auto;flex-shrink:0}
 
-.content{min-width:0}
-.topbar{background:#fff;border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:10}
-.topbar h2{margin:0;font-size:22px;font-weight:800;color:var(--navy);line-height:1.2;letter-spacing:-.02em}
-.topbar p{margin:3px 0 0;color:var(--muted);font-size:13px;font-weight:500}
-.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.container{padding:24px 28px;max-width:1280px;margin:auto}
+/* Rail mode: hanya ikon */
+html.sidebar-collapsed .sidebar-inner{padding:18px 10px;align-items:stretch}
+/* Logo & tombol ditumpuk vertikal - tombolnya HARUS tetap terlihat,
+   karena itu satu-satunya cara melebarkan sidebar kembali. */
+html.sidebar-collapsed .brand{flex-direction:column;gap:9px;justify-content:center;padding:4px 0 13px}
+html.sidebar-collapsed .brand-text,
+html.sidebar-collapsed .nav-title,
+html.sidebar-collapsed .role-card .name,
+html.sidebar-collapsed .role-card .desc,
+html.sidebar-collapsed .menu .label{display:none}
+html.sidebar-collapsed .role-card{justify-content:center;padding:8px;background:none;border-color:transparent}
+html.sidebar-collapsed .menu a,
+html.sidebar-collapsed .menu button{justify-content:center;padding:9px 0}
+html.sidebar-collapsed .badge{position:absolute;margin:0;transform:translate(14px,-12px)}
+html.sidebar-collapsed .menu a{position:relative}
+
+/* ============ TOPBAR & CONTENT ============ */
+.content{min-width:0;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:16px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:20}
+.topbar-left{display:flex;align-items:center;gap:14px;min-width:0}
+.topbar h2{margin:0;font-size:21px;font-weight:800;color:var(--ugm-blue);line-height:1.2;letter-spacing:-.02em}
+.topbar p{margin:2px 0 0;color:var(--muted);font-size:13px;font-weight:500}
+.topbar-menu-btn{display:none;width:40px;height:40px;flex-shrink:0;border:1px solid var(--border);border-radius:11px;background:#fff;color:var(--ugm-blue);align-items:center;justify-content:center;cursor:pointer}
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.container{padding:22px 26px 32px;max-width:1320px;margin:auto;width:100%}
+/* Di atas z-index tinggi Leaflet (z-index:1000 utk kontrol map) supaya overlay
+   selalu menutupi peta, dari halaman manapun overlay ini dipakai. */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(9,25,43,.5);z-index:1000}
+
+/* ============ KOMPONEN ============ */
 .grid{display:grid;gap:16px}
 .grid-4{grid-template-columns:repeat(4,1fr)}
 .grid-3{grid-template-columns:repeat(3,1fr)}
 .grid-2{grid-template-columns:repeat(2,1fr)}
-.card{background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:0 10px 28px rgba(11,58,91,.06);padding:20px}
-.card h2,.card h3{margin:0 0 8px;color:var(--navy);font-weight:800}
-.card p{color:var(--muted);line-height:1.55;font-weight:500}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:0 8px 24px rgba(0,41,79,.05);padding:20px}
+.card h2,.card h3{margin:0 0 8px;color:var(--ugm-blue);font-weight:800;letter-spacing:-.01em}
+.card h2{font-size:17px}
+.card h3{font-size:15px}
+.card p{color:var(--muted);line-height:1.55;font-weight:500;font-size:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .card-head h2{margin:0}
+/* Legenda peta: pill sejajar di header kartu, bukan kartu terpisah. */
+.legend{display:flex;gap:6px;flex-wrap:wrap}
+/* Pasangan tombol di dalam sel tabel - tetap sebaris dan tidak melebar. */
+.btn-row{display:flex;gap:8px;flex-wrap:nowrap}
+.btn-row .btn{padding:7px 14px;min-height:34px;font-size:13px;white-space:nowrap}
+
+.kpi{padding:18px 20px}
 .kpi .label{font-size:13px;color:var(--muted);font-weight:600}
-.kpi .value{font-size:30px;font-weight:800;color:var(--navy);margin-top:6px;line-height:1}
+.kpi .value{font-size:29px;font-weight:800;color:var(--ugm-blue);margin-top:5px;line-height:1;letter-spacing:-.02em}
 .kpi .value.tone-danger{color:var(--danger)}
 .kpi .value.tone-warn{color:var(--warn)}
 .kpi .value.tone-success{color:var(--success)}
-.kpi .note{font-size:12px;color:var(--muted);margin-top:6px;font-weight:500}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:13px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
-.btn-primary{background:var(--navy);color:#fff}
-.btn-soft{background:var(--soft);color:var(--ocean)}
-.btn-outline{background:#fff;border:1px solid var(--border);color:var(--navy)}
+.kpi .note{font-size:12px;color:var(--muted);margin-top:5px;font-weight:500}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;
+  border:0;border-radius:11px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;
+  font-family:inherit;line-height:1.2;white-space:nowrap;transition:filter .15s ease;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btn-primary{background:var(--ugm-blue);color:#fff}
+.btn-gold{background:var(--ugm-gold);color:var(--ugm-blue-deep)}
+.btn-soft{background:var(--ugm-blue-soft);color:var(--ugm-blue)}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--ugm-blue)}
+.btn-sm{min-height:34px;padding:7px 13px;font-size:13px;border-radius:9px}
+
 .form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.form-row-3{display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end}
+.form-row-3{display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end}
 .form-group{margin-bottom:15px}
-label{display:block;font-size:13px;font-weight:700;color:#334155;margin-bottom:7px}
-input,select,textarea{width:100%;border:1px solid #DDE5EE;border-radius:13px;padding:11px 13px;font-size:14px;outline:none;background:#fff;font-family:inherit;color:var(--ink)}
-input:focus,select:focus,textarea:focus{border-color:#7DD3FC;box-shadow:0 0 0 4px rgba(186,230,253,.5)}
-textarea{min-height:110px;resize:vertical}
+label{display:block;font-size:13px;font-weight:700;color:#33465C;margin-bottom:7px}
+input,select,textarea{width:100%;border:1px solid #D8E1EC;border-radius:11px;padding:11px 13px;font-size:14px;outline:none;background:#fff;font-family:inherit;color:var(--ink);min-height:42px}
+input:focus,select:focus,textarea:focus{border-color:var(--ocean);box-shadow:0 0 0 3px rgba(17,96,168,.14)}
+textarea{min-height:104px;resize:vertical}
 .hint{font-size:12px;color:var(--muted);margin-top:6px;font-weight:500}
 .field-error{font-size:12px;color:var(--danger);margin-top:6px;font-weight:700}
-.alert{border-radius:14px;padding:12px 14px;margin-bottom:16px;font-weight:700;font-size:14px}
-.alert-success{background:#ECFDF5;color:#047857;border:1px solid #A7F3D0}
-.alert-error{background:#FFF1F2;color:#BE123C;border:1px solid #FECDD3}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:separate;border-spacing:0}
-th{background:#F8FAFC;color:#64748B;text-transform:uppercase;letter-spacing:.04em;font-size:11px;font-weight:700;text-align:left;padding:12px;border-bottom:1px solid var(--border)}
-td{padding:12px;border-bottom:1px solid var(--border);font-size:14px;color:#334155;vertical-align:top}
-.pill{display:inline-flex;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800}
-.pill-normal{background:#ECFDF5;color:#047857}
-.pill-sick{background:#FFF1F2;color:#BE123C}
-.pill-warn{background:#FFF7E6;color:#B45309}
-.pill-info{background:#EAF6FF;color:#176B9A}
 
-/* Banner beraksi: status hari ini, kondisi presensi, strip perlu-perhatian */
-.banner{display:flex;align-items:center;gap:14px;border-radius:16px;padding:14px 18px;border:1px solid transparent}
-.banner-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.alert{border-radius:12px;padding:12px 15px;margin-bottom:16px;font-weight:600;font-size:14px}
+.alert-success{background:#ECFDF5;color:#046C4E;border:1px solid #A7F3D0}
+.alert-error{background:#FFF1F2;color:#BE123C;border:1px solid #FECDD3}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th{background:#F7FAFD;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:11px;font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:13px 12px;border-bottom:1px solid var(--border);font-size:14px;color:#33465C;vertical-align:top;line-height:1.5}
+td.nowrap,th.nowrap{white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+.pill-normal{background:#ECFDF5;color:#046C4E}
+.pill-sick{background:#FFF1F2;color:#BE123C}
+.pill-warn{background:#FFF7E6;color:#A35A08}
+.pill-info{background:var(--ugm-blue-soft);color:var(--ugm-blue)}
+.pill-gold{background:#FFF6DC;color:var(--ugm-gold-ink)}
+
+/* Banner beraksi */
+.banner{display:flex;align-items:center;gap:14px;border-radius:14px;padding:14px 18px;border:1px solid transparent}
+.banner-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .banner-body{flex:1;min-width:0}
 .banner-title{font-weight:700;font-size:14px;margin:0}
 .banner-desc{font-size:13px;margin:2px 0 0;font-weight:500}
-.banner-action{font-weight:700;font-size:13px;flex-shrink:0}
+.banner-action{font-weight:700;font-size:13px;flex-shrink:0;white-space:nowrap}
 .banner-success{background:#ECFDF5;border-color:#A7F3D0}
 .banner-success .banner-icon{background:var(--success)}
 .banner-success .banner-title{color:#065F46}
@@ -131,30 +243,161 @@ td{padding:12px;border-bottom:1px solid var(--border);font-size:14px;color:#3341
 .banner-danger .banner-action{color:#9F1239}
 .banner-warn{background:#FFF7E6;border-color:#FDE4B8}
 .banner-warn .banner-icon{background:var(--warn)}
-.banner-warn .banner-title{color:#92400E}
-.banner-warn .banner-desc{color:#B45309}
-.banner-warn .banner-action{color:#92400E}
+.banner-warn .banner-title{color:#8A4B06}
+.banner-warn .banner-desc{color:#A35A08}
+.banner-warn .banner-action{color:#8A4B06}
 
 /* Chip pilihan (kondisi presensi) */
 .chip-row{display:flex;flex-wrap:wrap;gap:8px}
-.chip{display:inline-flex;align-items:center;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;border:0;cursor:pointer;font-family:inherit;background:#F1F5F9;color:#475569}
-.chip.active{color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:38px;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid var(--border);cursor:pointer;font-family:inherit;background:#F4F7FB;color:#4A5B70}
+.chip:hover{border-color:var(--ocean)}
+.chip.active{color:#fff;border-color:transparent}
 
-.hero{background:linear-gradient(135deg,#fff,#F7FBFF);border:1px solid var(--border);border-radius:24px;padding:24px;display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:center;box-shadow:0 10px 28px rgba(11,58,91,.06)}
-.hero h1{font-size:32px;margin:0;color:var(--navy);line-height:1.1;font-weight:800;letter-spacing:-.02em}
-.hero p{color:var(--muted);line-height:1.55;font-weight:500}
-.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-.flow-box{background:#F8FAFC;border:1px solid var(--border);border-radius:16px;padding:14px}
-.flow-box strong{color:var(--navy)}
+.hero{background:linear-gradient(135deg,#fff,#F2F7FD);border:1px solid var(--border);border-radius:20px;padding:26px;display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:center;box-shadow:0 8px 24px rgba(0,41,79,.05)}
+.hero h1{font-size:30px;margin:0;color:var(--ugm-blue);line-height:1.12;font-weight:800;letter-spacing:-.025em}
+.hero p{color:var(--muted);line-height:1.6;font-weight:500}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.flow-box{background:#F7FAFD;border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13.5px;line-height:1.5}
+.flow-box strong{color:var(--ugm-blue)}
 .master-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
-#map{height:520px;border-radius:20px;border:1px solid var(--border);overflow:hidden}
-.footer{padding:0 28px 24px;font-size:12px;color:#94A3B8;max-width:1280px;margin:auto;font-weight:500}
+/* Bug: peta menumpuk di atas sidebar/drawer saat dibuka di HP. Sebabnya
+   Leaflet memberi z-index sampai 1000 pada kontrolnya sendiri (lihat
+   leaflet.css), dan tanpa stacking context sendiri nilai itu head-to-head
+   langsung melawan .sidebar/.drawer-overlay di level root. position:relative
+   + z-index:0 di sini mengurung seluruh stacking Leaflet di dalam #map,
+   supaya dari luar peta selalu dianggap setara elemen z-index:0 biasa. */
+#map{height:500px;border-radius:16px;border:1px solid var(--border);overflow:hidden;position:relative;z-index:0}
+/* Tinggi tetap (bukan mengikuti rasio lebar) supaya Chart.js tidak memipihkan
+   grafik di layar sempit - tanpa ini tingginya = lebar/2, jadi di HP cuma
+   ~170px dan 14 label tanggal berhimpitan. Lihat maintainAspectRatio:false
+   di overview/index.blade.php yang mengaktifkan pola ini. */
+.chart-wrap{position:relative;height:280px}
+.footer{padding:0 26px 24px;font-size:12px;color:#93A3B5;max-width:1320px;margin:auto;font-weight:500}
 .pagination-wrap{margin-top:16px}
 .pagination-wrap nav{font-size:13px;color:var(--muted)}
+
+/* ============ LANDING (layout auth) ============ */
+.auth-shell{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh}
+.auth-aside{
+  background:linear-gradient(150deg,var(--ugm-blue) 0%,var(--ugm-blue-deep) 100%);
+  color:#fff;padding:52px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;
+}
+.auth-aside::after{
+  content:'';position:absolute;right:-120px;bottom:-140px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,199,44,.18) 0%,rgba(255,199,44,0) 70%);
+}
+.auth-brand{display:flex;align-items:center;gap:13px;position:relative;z-index:1}
+.auth-brand .logo{width:52px;height:52px;border-radius:14px;padding:6px}
+.auth-brand h1{font-size:17px;margin:0;font-weight:800;line-height:1.2}
+.auth-brand p{font-size:12.5px;margin:2px 0 0;color:rgba(255,255,255,.6)}
+.auth-pitch{position:relative;z-index:1;max-width:440px}
+.auth-pitch h2{font-size:33px;line-height:1.14;margin:0 0 14px;font-weight:800;letter-spacing:-.025em}
+.auth-pitch h2 em{font-style:normal;color:var(--ugm-gold)}
+.auth-pitch p{color:rgba(255,255,255,.72);line-height:1.65;font-size:15px;margin:0}
+.auth-points{display:flex;flex-direction:column;gap:12px;margin-top:26px}
+.auth-point{display:flex;align-items:center;gap:11px;font-size:14px;color:rgba(255,255,255,.85);font-weight:500}
+.auth-point span{width:26px;height:26px;border-radius:8px;background:rgba(255,199,44,.16);color:var(--ugm-gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.auth-foot{position:relative;z-index:1;font-size:12.5px;color:rgba(255,255,255,.45)}
+
+.auth-main{display:flex;align-items:center;justify-content:center;padding:44px 32px;background:var(--bg)}
+.auth-card{width:100%;max-width:412px}
+.auth-card h3{font-size:25px;margin:0 0 6px;color:var(--ugm-blue);font-weight:800;letter-spacing:-.02em}
+.auth-card .sub{color:var(--muted);font-size:14.5px;margin:0 0 26px;line-height:1.55;font-weight:500}
+.btn-block{width:100%;min-height:50px;font-size:15px}
+.btn-google{background:#fff;border:1px solid #D8E1EC;color:#33465C;box-shadow:0 2px 6px rgba(0,41,79,.05)}
+.auth-sep{display:flex;align-items:center;gap:12px;margin:20px 0;color:#93A3B5;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.auth-sep::before,.auth-sep::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-demo{margin-top:18px;border:1px solid var(--border);border-radius:13px;background:#fff;overflow:hidden}
+.auth-demo summary{cursor:pointer;padding:13px 16px;font-size:13.5px;font-weight:700;color:var(--ugm-blue);list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.auth-demo summary::-webkit-details-marker{display:none}
+.auth-demo summary::after{content:'▾';color:var(--muted);font-size:14px}
+.auth-demo[open] summary{border-bottom:1px solid var(--border)}
+.auth-demo-body{padding:15px 16px 16px}
+.auth-note{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6;text-align:center}
+
+/* ============ RESPONSIF ============ */
+@media(max-width:1100px){
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .auth-aside{padding:40px 38px}
+  .auth-pitch h2{font-size:28px}
+}
+@media(max-width:900px){
+  .auth-shell{grid-template-columns:1fr}
+  .auth-aside{display:none}
+  .auth-main{
+    padding:36px 22px;min-height:100vh;
+    padding-top:calc(36px + env(safe-area-inset-top));
+    padding-bottom:calc(36px + env(safe-area-inset-bottom));
+    padding-left:calc(22px + env(safe-area-inset-left));
+    padding-right:calc(22px + env(safe-area-inset-right));
+  }
+}
 @media(max-width:980px){
-  .shell{grid-template-columns:1fr}
-  .sidebar{height:auto;position:relative}
-  .menu{display:grid;grid-template-columns:repeat(2,1fr)}
-  .topbar{position:relative;align-items:flex-start;flex-direction:column}
-  .grid-4,.grid-3,.grid-2,.form-row,.form-row-3,.hero{grid-template-columns:1fr}
+  .shell,html.sidebar-collapsed .shell{grid-template-columns:1fr}
+  /* Di mode drawer, .sidebar sendiri yang jadi kotak fixed 100vh (bukan lagi
+     stretch mengikuti baris grid, karena gridnya sudah 1 kolom) - jadi
+     .sidebar-inner cukup mengisi 100% tanpa sticky-nya sendiri lagi. */
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:266px;z-index:1001;height:100vh;
+    transform:translateX(-104%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,41,79,.3);
+  }
+  .sidebar-inner{
+    position:static;height:100%;
+    /* Layar dengan notch/status bar bulat (iPhone dsb.) - lihat viewport-fit=cover di <head>. */
+    padding-top:calc(18px + env(safe-area-inset-top));
+    padding-left:calc(14px + env(safe-area-inset-left));
+    padding-bottom:calc(18px + env(safe-area-inset-bottom));
+  }
+  html.drawer-open .sidebar{transform:translateX(0)}
+  html.drawer-open .drawer-overlay{display:block}
+  /* di drawer, selalu tampilkan label penuh walau rail aktif di desktop */
+  html.sidebar-collapsed .sidebar-inner{
+    padding:calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+  }
+  html.sidebar-collapsed .brand{flex-direction:row;gap:11px;justify-content:flex-start}
+  html.sidebar-collapsed .brand-text,
+  html.sidebar-collapsed .nav-title,
+  html.sidebar-collapsed .role-card .name,
+  html.sidebar-collapsed .role-card .desc,
+  html.sidebar-collapsed .menu .label{display:block}
+  /* Drawer punya kontrol sendiri (hamburger + overlay), rail tidak relevan. */
+  .sidebar-toggle{display:none}
+  html.sidebar-collapsed .role-card{justify-content:flex-start;padding:10px;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.10)}
+  html.sidebar-collapsed .menu a,
+  html.sidebar-collapsed .menu button{justify-content:flex-start;padding:9px 12px}
+  html.sidebar-collapsed .badge{position:static;transform:none;margin-left:auto}
+  .topbar-menu-btn{display:flex;width:44px;height:44px}
+  .topbar{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top))}
+  .container{padding:18px 18px 28px;padding-left:calc(18px + env(safe-area-inset-left));padding-right:calc(18px + env(safe-area-inset-right))}
+  .grid-4,.grid-3,.grid-2,.form-row,.form-row-3,.hero,.master-inline{grid-template-columns:1fr}
+  .hero h1{font-size:26px}
+  #map{height:380px}
+  .chart-wrap{height:240px}
+  /* Cegah Safari iOS auto-zoom saat fokus ke input (di bawah 16px, iOS
+     otomatis memperbesar halaman, terasa seperti "loncat" bagi pengguna). */
+  input,select,textarea{font-size:16px}
+  .chip{min-height:40px}
+}
+@media(max-width:520px){
+  .grid-4{grid-template-columns:1fr}
+  /* Judul dan aksi ditumpuk. Kalau tetap sebaris, .top-actions yang width:100%
+     + flex-shrink:0 menggencet .topbar-left sampai judul pecah satu kata/baris. */
+  .topbar{flex-direction:column;align-items:stretch;gap:12px}
+  .topbar-left{width:100%}
+  .topbar h2{font-size:19px}
+  .top-actions{width:100%}
+  .top-actions .btn{flex:1 1 auto;justify-content:center}
+  /* Aksi utama halaman tetap selebar kartu supaya gampang ditekan di HP. */
+  .hero-actions{flex-direction:column;align-items:stretch}
+  .card{padding:16px}
+  /* Tombol submit tunggal (filter/form pencarian/simpan) selebar kartu -
+     lebih gampang ditekan dan tidak menggantung sendirian di kiri layar. */
+  .card>.btn,
+  .card>form>.btn,
+  .card form>.form-group>.btn{width:100%;justify-content:center}
+  /* Banner beraksi ditumpuk vertikal - dalam satu baris terlalu sempit
+     untuk ikon + judul + deskripsi + tombol aksi di layar sekecil ini. */
+  .banner{flex-direction:column;align-items:flex-start;gap:10px}
+  .banner-action{align-self:stretch;text-align:center;padding:9px 0;border-radius:9px;background:rgba(255,255,255,.6)}
+  #map{height:300px}
 }

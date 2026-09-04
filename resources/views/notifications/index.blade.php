@@ -13,19 +13,19 @@
     </form>
   </div>
 
-  <div class="table-wrap" style="margin-top:14px">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>Waktu</th><th>Mahasiswa</th><th>Kondisi</th><th>Wilayah</th><th></th></tr></thead>
       <tbody>
         @forelse ($notifications as $n)
           <tr style="{{ $n->read_at ? 'opacity:.6' : '' }}">
-            <td>{{ $n->created_at->translatedFormat('d M Y H:i') }}</td>
+            <td class="nowrap">{{ $n->created_at->translatedFormat('d M Y H:i') }}</td>
             <td>{{ $n->data['student_name'] ?? '-' }}</td>
-            <td><x-pill class="pill-sick">{{ $n->data['condition'] ?? '-' }}</x-pill></td>
+            <td class="nowrap"><x-pill class="pill-sick">{{ $n->data['condition'] ?? '-' }}</x-pill></td>
             <td><small>{{ $n->data['region'] ?? '-' }}</small></td>
-            <td>
+            <td class="nowrap">
               @unless ($n->read_at)
-                <form method="post" action="{{ route('notifications.mark-read', $n->id) }}">
+                <form method="post" action="{{ route('notifications.mark-read', $n->id) }}" class="btn-row">
                   @csrf
                   <button class="btn btn-outline" type="submit">Tandai Dibaca</button>
                 </form>

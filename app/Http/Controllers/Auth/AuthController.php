@@ -13,13 +13,34 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    public function show(): View
+    /**
+     * Landing page: tiga jalur masuk (Google SSO, akun demo, mode tamu).
+     * Dipakai untuk `/` dan `/login` - yang sudah login langsung ke dashboard.
+     */
+    public function landing(): View|RedirectResponse
     {
-        return view('auth.login', [
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.landing', [
             'demoStudents' => self::demoLoginAllowed()
                 ? Student::orderBy('name')->get(['id', 'name', 'email'])
                 : collect(),
         ]);
+    }
+
+    /**
+     * Mode tamu: HANYA penanda sesi supaya UI bisa menampilkan "Mode Tamu".
+     * Tidak membuat akun, tidak menyentuh guard/RBAC - akses yang didapat
+     * persis sama dengan akses publik yang memang sudah terbuka (search
+     * mahasiswa/logbook & peta publik, semuanya sudah disaring dari PII).
+     */
+    public function enterGuest(Request $request): RedirectResponse
+    {
+        $request->session()->put('guest_mode', true);
+
+        return redirect()->route('public.home');
     }
 
     public function redirectToGoogle(): RedirectResponse
@@ -80,6 +101,8 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
+        // Tombol "Keluar" yang sama juga dipakai untuk mengakhiri mode tamu.
+        $request->session()->forget('guest_mode');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
