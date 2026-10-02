@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Input Logbook')
-@section('description', 'Input progress, kesehatan, lokasi, personal info, dan dokumentasi.')
+@section('description', 'Catat kegiatan, lokasi, dan warga yang terlibat.')
 
 @section('content')
 @livewire('logbook-form')

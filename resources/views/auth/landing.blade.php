@@ -21,23 +21,33 @@
   </button>
 </form>
 
-<p class="auth-note">Mode tamu hanya bisa melihat data publik: pencarian mahasiswa, pencarian logbook, dan peta sebaran. Presensi dan input logbook butuh akun UGM.</p>
+<p class="auth-note">Mahasiswa masuk dengan email <strong>@mail.ugm.ac.id</strong>, dosen &amp; pembimbing dengan <strong>@ugm.ac.id</strong>. Akun harus sudah terdaftar dan disetujui admin.</p>
+<p class="auth-note" style="margin-top:8px">Belum terdaftar? <a href="{{ route('register.create') }}"><strong>Daftar akun baru</strong></a> dengan akun UGM Anda, lalu tunggu persetujuan admin.</p>
+<p class="auth-note" style="margin-top:8px">Mode tamu hanya bisa melihat data publik: pencarian mahasiswa, pencarian logbook, dan peta sebaran.</p>
 
 @if ($demoStudents->isNotEmpty())
-  <details class="auth-demo">
+  <details class="auth-demo" @if ($errors->hasAny(['email', 'kode'])) open @endif>
     <summary>Coba dengan akun demo</summary>
     <div class="auth-demo-body">
-      <p class="hint" style="margin:0 0 12px">Google OAuth belum dikonfigurasi di environment ini, jadi akun demo tersedia untuk mencoba semua peran.</p>
+      <p class="hint" style="margin:0 0 12px">Akun uji coba untuk mencoba fungsi tiap peran.{{ $demoNeedsCode ? ' Butuh kode akses dari admin.' : '' }}</p>
       <form method="post" action="{{ route('demo-login') }}">
         @csrf
         <div class="form-group">
           <label for="demo-email">Pilih akun</label>
           <select name="email" id="demo-email" required>
             @foreach ($demoStudents as $s)
-              <option value="{{ $s->email }}">{{ $s->name }} &mdash; {{ $s->email }}</option>
+              <option value="{{ $s->email }}" @selected(old('email') === $s->email)>{{ $s->roleLabel() }}: {{ $s->name }}</option>
             @endforeach
           </select>
+          @error('email') <div class="field-error">{{ $message }}</div> @enderror
         </div>
+        @if ($demoNeedsCode)
+          <div class="form-group">
+            <label for="demo-kode">Kode akses</label>
+            <input id="demo-kode" name="kode" type="password" autocomplete="off" maxlength="100" required>
+            @error('kode') <div class="field-error">{{ $message }}</div> @enderror
+          </div>
+        @endif
         <button class="btn btn-soft btn-block" type="submit">Masuk dengan Akun Demo</button>
       </form>
     </div>

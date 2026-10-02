@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Region extends Model
 {
@@ -42,6 +43,29 @@ class Region extends Model
         }
 
         return $ids;
+    }
+
+    /**
+     * Semua path wilayah yang sudah ada ("Kabupaten / Kecamatan / ..."), untuk
+     * saran isian form. Dihitung dari satu query supaya tidak memanggil
+     * fullPath() (query per level) untuk tiap wilayah.
+     *
+     * @return Collection<int, string>
+     */
+    public static function paths(): Collection
+    {
+        $regions = self::all(['id', 'parent_id', 'name'])->keyBy('id');
+
+        return $regions->map(function (self $region) use ($regions) {
+            $names = [];
+            $current = $region;
+            while ($current) {
+                array_unshift($names, $current->name);
+                $current = $regions->get($current->parent_id);
+            }
+
+            return implode(' / ', $names);
+        })->sort()->values();
     }
 
     public function fullPath(): string

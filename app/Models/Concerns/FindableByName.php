@@ -14,8 +14,11 @@ trait FindableByName
         // Audit §XSS: nama master-data dirender di berbagai tempat (termasuk popup
         // peta via JS). Buang tag HTML sejak awal supaya payload <img onerror=...>
         // tidak pernah tersimpan sebagai nama.
-        $name = trim(strip_tags($name));
+        $name = trim((string) preg_replace('/\s+/u', ' ', strip_tags($name)));
 
-        return static::firstOrCreate(['name' => $name]);
+        // LIKE tanpa wildcard = cocok persis tapi mengabaikan huruf besar/kecil di
+        // MySQL maupun SQLite, jadi "balai desa" tidak menduplikasi "Balai Desa".
+        return static::where('name', 'like', addcslashes($name, '%_\\'))->first()
+            ?? static::create(['name' => $name]);
     }
 }

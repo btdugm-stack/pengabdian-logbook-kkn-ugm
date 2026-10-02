@@ -152,7 +152,11 @@ html.sidebar-collapsed .menu a{position:relative}
 .topbar p{margin:2px 0 0;color:var(--muted);font-size:13px;font-weight:500}
 .topbar-menu-btn{display:none;width:40px;height:40px;flex-shrink:0;border:1px solid var(--border);border-radius:11px;background:#fff;color:var(--ugm-blue);align-items:center;justify-content:center;cursor:pointer}
 .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0}
-.container{padding:22px 26px 32px;max-width:1320px;margin:auto;width:100%}
+/* .content adalah flex kolom: margin:auto di sini akan memusatkan isi halaman
+   secara vertikal & horizontal, jadi isi sengaja menempel kiri-atas dan
+   mengisi lebar yang tersedia. max-width:none menimpa utilitas .container
+   Tailwind yang membatasi lebar per breakpoint. */
+.container{padding:22px 26px 32px;width:100%;max-width:none}
 /* Di atas z-index tinggi Leaflet (z-index:1000 utk kontrol map) supaya overlay
    selalu menutupi peta, dari halaman manapun overlay ini dipakai. */
 .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(9,25,43,.5);z-index:1000}
@@ -197,6 +201,10 @@ html.sidebar-collapsed .menu a{position:relative}
 .btn-sm{min-height:34px;padding:7px 13px;font-size:13px;border-radius:9px}
 
 .form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-row-4{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end}
+.inline-form{display:flex;gap:8px;align-items:center}
+.inline-form input,.inline-form select{min-width:160px}
+.chip.is-current{background:var(--ugm-blue);color:#fff;border-color:transparent}
 .form-row-3{display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end}
 .form-group{margin-bottom:15px}
 label{display:block;font-size:13px;font-weight:700;color:#33465C;margin-bottom:7px}
@@ -204,6 +212,9 @@ input,select,textarea{width:100%;border:1px solid #D8E1EC;border-radius:11px;pad
 input:focus,select:focus,textarea:focus{border-color:var(--ocean);box-shadow:0 0 0 3px rgba(17,96,168,.14)}
 textarea{min-height:104px;resize:vertical}
 .hint{font-size:12px;color:var(--muted);margin-top:6px;font-weight:500}
+[aria-invalid="true"]{border-color:var(--danger)}
+.error-list{margin:8px 0 0;padding-left:18px;font-weight:500}
+.error-list a{text-decoration:underline;font-weight:700}
 .field-error{font-size:12px;color:var(--danger);margin-top:6px;font-weight:700}
 
 .alert{border-radius:12px;padding:12px 15px;margin-bottom:16px;font-weight:600;font-size:14px}
@@ -260,21 +271,87 @@ tr:last-child td{border-bottom:0}
 .flow-box{background:#F7FAFD;border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13.5px;line-height:1.5}
 .flow-box strong{color:var(--ugm-blue)}
 .master-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+/* Kolom cari-pilih-tambah master data (components/search-select.blade.php) */
+.combo>div{position:relative}
+.combo.is-invalid input{border-color:var(--danger)}
+.combo-list{position:absolute;z-index:30;left:0;right:0;top:46px;margin:0;padding:6px;list-style:none;max-height:264px;overflow-y:auto;background:#fff;border:1px solid #D8E1EC;border-radius:11px;box-shadow:0 10px 28px rgba(0,41,79,.14)}
+.combo-list li{display:flex;align-items:center;min-height:44px;padding:8px 11px;border-radius:9px;font-size:14px;cursor:pointer;overflow-wrap:anywhere}
+.combo-list li:hover,.combo-list li.is-active{background:var(--ugm-blue-soft);color:var(--ugm-blue)}
+.combo-list .combo-add{font-weight:700;color:var(--ugm-blue);border-top:1px solid var(--border);border-radius:0 0 9px 9px;margin-top:4px}
 /* Bug: peta menumpuk di atas sidebar/drawer saat dibuka di HP. Sebabnya
    Leaflet memberi z-index sampai 1000 pada kontrolnya sendiri (lihat
    leaflet.css), dan tanpa stacking context sendiri nilai itu head-to-head
    langsung melawan .sidebar/.drawer-overlay di level root. position:relative
    + z-index:0 di sini mengurung seluruh stacking Leaflet di dalam #map,
    supaya dari luar peta selalu dianggap setara elemen z-index:0 biasa. */
+.map-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.map-legend-title{font-size:13px;font-weight:700;color:var(--muted);margin-right:2px}
+.map-legend-item{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border-radius:11px;border:1px solid var(--border);background:#fff;color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+button.map-legend-item:hover{border-color:var(--ocean)}
+.map-legend-item[aria-pressed="false"]{background:#F4F7FB;color:var(--muted);text-decoration:line-through}
+.map-legend-item[aria-pressed="false"] .map-legend-swatch{opacity:.3}
+.map-legend-swatch{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,41,79,.25);flex-shrink:0}
+.map-legend-count{font-size:12px;color:var(--muted);font-weight:700}
+.map-legend-reset{min-height:44px;padding:8px 12px;border:0;background:none;color:var(--ocean);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:underline}
+.map-legend-reset[hidden]{display:none}
 #map{height:500px;border-radius:16px;border:1px solid var(--border);overflow:hidden;position:relative;z-index:0}
 /* Tinggi tetap (bukan mengikuti rasio lebar) supaya Chart.js tidak memipihkan
    grafik di layar sempit - tanpa ini tingginya = lebar/2, jadi di HP cuma
    ~170px dan 14 label tanggal berhimpitan. Lihat maintainAspectRatio:false
    di overview/index.blade.php yang mengaktifkan pola ini. */
 .chart-wrap{position:relative;height:280px}
-.footer{padding:0 26px 24px;font-size:12px;color:#93A3B5;max-width:1320px;margin:auto;font-weight:500}
+.footer{padding:0 26px 24px;font-size:12px;color:#93A3B5;width:100%;margin-top:auto;font-weight:500}
 .pagination-wrap{margin-top:16px}
 .pagination-wrap nav{font-size:13px;color:var(--muted)}
+
+/* ============ TAMBAHAN EARLY ACCESS ============ */
+[x-cloak]{display:none!important}
+.ico{display:block;flex-shrink:0}
+.menu .icon{display:flex;align-items:center;justify-content:center;font-size:0}
+.ea-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--ugm-gold);color:var(--ugm-blue-deep);font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;vertical-align:2px;line-height:1.6}
+.stack{display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--muted)}
+.optional{font-weight:500;color:var(--muted)}
+.table-link{color:var(--ocean);font-weight:700}
+.table-link:hover{text-decoration:underline}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--ocean);font-weight:700;font-size:13.5px;margin-bottom:14px}
+.back-link:hover{text-decoration:underline}
+.note-cell{min-width:220px;max-width:380px}
+.empty-cell{color:var(--muted);text-align:center;padding:28px 12px}
+.empty-state{text-align:center;padding:24px 12px}
+.empty-state p{margin:0 0 14px}
+tr.is-read td{opacity:.6}
+.auth-note a{color:var(--ocean)}
+.review-note{display:inline-block;margin-top:6px;max-width:260px;color:#8A4B06;font-weight:600;line-height:1.45;white-space:normal}
+.review-item{padding:12px 0;border-top:1px solid var(--border)}
+.review-item:first-of-type{border-top:0;padding-top:0}
+.prewrap{white-space:pre-wrap;overflow-wrap:anywhere}
+.assign-group{border:1px solid var(--border);border-radius:14px;padding:6px 16px 12px;margin:0 0 12px;min-width:0}
+.assign-group legend{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;padding:8px 0;font-weight:700;color:var(--ugm-blue);font-size:14px}
+.assign-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px}
+.assign-list .checkbox{align-items:flex-start;font-weight:600;padding:6px 0;margin:0}
+.assign-list .checkbox input{margin-top:2px;flex-shrink:0}
+.request-item{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:18px 0;border-top:1px solid var(--border)}
+.request-actions{display:grid;gap:14px;align-content:start}
+@media(max-width:980px){.request-item{grid-template-columns:1fr}}
+.btn-danger-outline{background:#fff;border:1px solid #FECDD3;color:#BE123C}
+.geo-field{display:flex;flex-direction:column}
+.scroll-y{max-height:420px;overflow-y:auto}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.checkbox{display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer;margin:0 0 6px}
+.checkbox input{width:18px;height:18px;min-height:0;padding:0;accent-color:var(--ugm-blue)}
+.card-danger{border-color:#FECDD3}
+.card-danger h2{color:#9F1239}
+code.inline{background:var(--ugm-blue-soft);color:var(--ugm-blue);padding:1px 6px;border-radius:6px;font-size:12.5px}
+.detail-list{margin:0;display:grid;gap:12px}
+.detail-list>div{display:grid;grid-template-columns:140px 1fr;gap:10px;font-size:14px;line-height:1.5}
+.detail-list dt{color:var(--muted);font-weight:600}
+.detail-list dd{margin:0;color:var(--ink);font-weight:600;overflow-wrap:anywhere}
+.detail-list a{color:var(--ocean)}
+.auth-mobile-brand{display:none;align-items:center;gap:12px;margin-bottom:26px}
+.auth-mobile-brand .logo{width:44px;height:44px;border:1px solid var(--border)}
+.auth-mobile-brand strong{display:block;color:var(--ugm-blue);font-size:16px;font-weight:800}
+.auth-mobile-brand .ea-tag{margin-left:0}
 
 /* ============ LANDING (layout auth) ============ */
 .auth-shell{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh}
@@ -324,6 +401,7 @@ tr:last-child td{border-bottom:0}
 @media(max-width:900px){
   .auth-shell{grid-template-columns:1fr}
   .auth-aside{display:none}
+  .auth-mobile-brand{display:flex}
   .auth-main{
     padding:36px 22px;min-height:100vh;
     padding-top:calc(36px + env(safe-area-inset-top));
@@ -369,7 +447,7 @@ tr:last-child td{border-bottom:0}
   .topbar-menu-btn{display:flex;width:44px;height:44px}
   .topbar{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top))}
   .container{padding:18px 18px 28px;padding-left:calc(18px + env(safe-area-inset-left));padding-right:calc(18px + env(safe-area-inset-right))}
-  .grid-4,.grid-3,.grid-2,.form-row,.form-row-3,.hero,.master-inline{grid-template-columns:1fr}
+  .grid-4,.grid-3,.grid-2,.form-row,.form-row-3,.form-row-4,.hero,.master-inline{grid-template-columns:1fr}
   .hero h1{font-size:26px}
   #map{height:380px}
   .chart-wrap{height:240px}
@@ -400,4 +478,5 @@ tr:last-child td{border-bottom:0}
   .banner{flex-direction:column;align-items:flex-start;gap:10px}
   .banner-action{align-self:stretch;text-align:center;padding:9px 0;border-radius:9px;background:rgba(255,255,255,.6)}
   #map{height:300px}
+  .detail-list>div{grid-template-columns:1fr;gap:2px}
 }

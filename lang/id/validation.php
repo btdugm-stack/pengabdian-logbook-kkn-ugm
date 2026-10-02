@@ -201,6 +201,12 @@ return [
         'study_program' => 'program studi',
         'phone' => 'nomor telepon',
         'emergency_contact' => 'kontak darurat',
+        'nama' => 'nama',
+        'peran' => 'peran',
+        'wilayah' => 'wilayah',
+        'fakultas' => 'fakultas',
+        'prodi' => 'program studi',
+        'file' => 'berkas CSV',
     ],
 
 ];

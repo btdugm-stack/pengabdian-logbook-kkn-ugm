@@ -6,6 +6,7 @@ use App\Models\AssistAttendance;
 use App\Models\Program;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -31,7 +32,7 @@ class AssistAttendanceForm extends Component
     #[Computed]
     public function hostOptions()
     {
-        return Student::role('mahasiswa')
+        return Student::participants()
             ->where('id', '!=', Auth::id())
             ->orderBy('name')
             ->get();
@@ -46,9 +47,12 @@ class AssistAttendanceForm extends Component
     public function save()
     {
         $this->validate([
-            'host_student_id' => 'required|exists:students,id',
-            'assist_date' => 'required|date',
+            // Host harus mahasiswa lain - bukan diri sendiri atau akun supervisi,
+            // walau id-nya dikirim manual tanpa lewat dropdown.
+            'host_student_id' => ['required', Rule::in($this->hostOptions->pluck('id')->map(fn ($id) => (string) $id)->all())],
+            'assist_date' => 'required|date|before_or_equal:today',
             'hours' => 'required|numeric|min:0.5|max:24',
+            'program_new' => 'nullable|string|max:150',
             'role_note' => 'nullable|string|max:255',
         ]);
 

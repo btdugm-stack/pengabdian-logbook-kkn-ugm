@@ -1,14 +1,40 @@
 @extends('layouts.app')
 
 @section('title', 'Overview Wilayah')
-@section('description', 'Ringkasan presensi & kondisi mahasiswa, ter-filter sesuai cakupan wilayah akun Anda.')
+@section('description', 'Ringkasan presensi dan kondisi mahasiswa dalam cakupan akun Anda.')
 
 @section('content')
+@if ($unassigned)
+  <div style="margin-bottom:18px">
+    @if (auth()->user()->hasAnyRole(\App\Models\Student::ASSIGNED_SCOPE_ROLES))
+      <x-banner tone="warn" title="Belum ada mahasiswa bimbingan" action-label="Pilih Mahasiswa" :action-href="route('advisees.edit')">
+        Karena itu belum ada mahasiswa yang tampil. Pilih sendiri mahasiswa bimbingan Anda, atau minta admin LPPM menugaskannya.
+      </x-banner>
+    @elseif (auth()->user()->hasAnyRole(\App\Models\Student::UNIT_ROLES))
+      <x-banner tone="warn" title="Fakultas akun Anda belum diisi">
+        Karena itu belum ada mahasiswa yang tampil. Minta admin LPPM mengisi fakultas akun Anda.
+      </x-banner>
+    @else
+      <x-banner tone="warn" title="Akun Anda belum ditugaskan ke wilayah mana pun">
+        Karena itu belum ada mahasiswa yang tampil. Minta admin LPPM mengisi wilayah akun Anda.
+      </x-banner>
+    @endif
+  </div>
+@endif
+
+@if ($students->isEmpty() && ! $selectedRegion && auth()->user()->hasAnyRole(\App\Models\Student::ACCOUNT_MANAGER_ROLES))
+  <div style="margin-bottom:18px">
+    <x-banner tone="warn" title="Belum ada mahasiswa terdaftar" action-label="Kelola Peserta" :action-href="route('admin.participants.index')">
+      Daftarkan akun mahasiswa dan pembimbing supaya mereka bisa masuk dengan akun Google UGM.
+    </x-banner>
+  </div>
+@endif
+
 <div class="card">
   <form method="get" class="form-row-3">
     <div class="form-group">
-      <label>Filter Wilayah</label>
-      <select name="region_id" onchange="this.form.submit()">
+      <label for="region_id">Filter Wilayah</label>
+      <select id="region_id" name="region_id" onchange="this.form.submit()">
         <option value="">Semua wilayah dalam cakupan saya</option>
         @foreach ($filterOptions as $r)
           <option value="{{ $r->id }}" {{ $selectedRegion?->id === $r->id ? 'selected' : '' }}>{{ $r->fullPath() }}</option>
@@ -36,7 +62,11 @@
 @if ($attentionNames->isNotEmpty())
   <div style="margin-top:18px">
     <x-banner tone="danger" title="{{ $attentionNames->count() }} mahasiswa perlu perhatian hari ini">
-      {{ $attentionNames->take(3)->implode(', ') }}{{ $attentionNames->count() > 3 ? ', dan '.($attentionNames->count() - 3).' lainnya' : '' }}
+      @if ($aggregateOnly)
+        {{ $sickNames->count() }} sakit, {{ $absentNames->count() }} belum presensi.
+      @else
+        {{ $attentionNames->take(3)->implode(', ') }}{{ $attentionNames->count() > 3 ? ', dan '.($attentionNames->count() - 3).' lainnya' : '' }}
+      @endif
     </x-banner>
   </div>
 @endif
@@ -50,16 +80,13 @@
 
 <div class="card" style="margin-top:18px">
   <div class="card-head">
-    <h2>Peta Sub-unit</h2>
-    <div class="legend">
-      <x-pill class="pill-normal">Sehat</x-pill>
-      <x-pill class="pill-sick">Sakit</x-pill>
-      <x-pill class="pill-warn">Izin/Alpha</x-pill>
-    </div>
+    <h2>{{ $aggregateOnly ? 'Peta Sebaran Kegiatan' : 'Peta Kegiatan' }}</h2>
+    <span class="hint" style="margin:0">{{ count($map['markers']) }} titik</span>
   </div>
-  <div id="map"></div>
+  <x-activity-map :map="$map" empty-text="Belum ada logbook berkoordinat dari mahasiswa dalam cakupan ini." />
 </div>
 
+@unless ($aggregateOnly)
 <div class="card" style="margin-top:18px">
   <div class="card-head">
     <h2>Daftar Mahasiswa</h2>
@@ -72,7 +99,7 @@
         @forelse ($students as $s)
           @php $att = $todayAttendances->get($s->id) @endphp
           <tr>
-            <td><strong>{{ $s->name }}</strong></td>
+            <td><a class="table-link" href="{{ route('overview.student', $s) }}">{{ $s->name }}</a></td>
             <td><small>{{ $s->region?->fullPath() }}</small></td>
             <td class="nowrap">
               @if ($att)
@@ -84,55 +111,18 @@
             <td class="nowrap">{{ $att?->check_in_time?->format('H:i') ?? '-' }}</td>
           </tr>
         @empty
-          <tr><td colspan="4">Tidak ada mahasiswa pada wilayah ini.</td></tr>
+          <tr><td colspan="4" class="empty-cell">Tidak ada mahasiswa pada wilayah ini.</td></tr>
         @endforelse
       </tbody>
     </table>
   </div>
 </div>
+@endunless
 @endsection
 
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const markers = @json($markers);
-  const map = window.L.map('map').setView([-7.81, 110.36], 11);
-  window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-
-  const cluster = window.L.markerClusterGroup();
-  const bounds = [];
-
-  // Audit §XSS: nama mahasiswa/program/lokasi adalah input user -> escape sebelum
-  // masuk innerHTML popup supaya tag/atribut HTML dirender sebagai teks literal.
-  const esc = (s) => {
-    const d = document.createElement('div');
-    d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
-  };
-
-  markers.forEach(m => {
-    const marker = window.L.circleMarker([m.lat, m.lng], {
-      radius: 10, color: '#fff', weight: 3, fillColor: m.color, fillOpacity: 0.9
-    });
-    marker.bindPopup(
-      `<b>${esc(m.title)}</b><br>` +
-      `${esc(m.student)}<br>` +
-      `${esc(m.location)}<br>` +
-      `Kondisi: ${esc(m.health)}<br>` +
-      `Status: ${esc(m.status)}`
-    );
-    cluster.addLayer(marker);
-    bounds.push([m.lat, m.lng]);
-  });
-  map.addLayer(cluster);
-
-  if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [30, 30] });
-  }
-
   new window.Chart(document.getElementById('trendChart'), {
     type: 'bar',
     data: {

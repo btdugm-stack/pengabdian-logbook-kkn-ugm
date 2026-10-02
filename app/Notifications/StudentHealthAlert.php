@@ -18,7 +18,8 @@ class StudentHealthAlert extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        // database dulu: bila pengiriman email gagal, notifikasi di aplikasi sudah tersimpan.
+        return ['database', 'mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -31,7 +32,7 @@ class StudentHealthAlert extends Notification
             ->line("{$student->name} ({$student->email}) melaporkan kondisi kesehatan **{$this->attendance->condition}** pada presensi hari ini.")
             ->when($this->attendance->condition_note, fn ($mail) => $mail->line("Catatan: {$this->attendance->condition_note}"))
             ->line('Wilayah: '.($student->region?->fullPath() ?? '-'))
-            ->action('Buka Overview Wilayah', route('overview'))
+            ->action('Lihat Detail Mahasiswa', route('overview.student', $student))
             ->line('Mohon segera ditindaklanjuti sesuai kebutuhan.');
     }
 

@@ -53,8 +53,9 @@ class MapPublicPrivacyTest extends TestCase
         $response->assertSee('Mahasiswa A');
         $response->assertSee('"health":null', false);
         $response->assertDontSee('Sakit Berat');
-        // Warna marker dinetralkan (bukan warna berbasis kondisi kesehatan).
-        $response->assertSee('#3B82F6', false);
+        // Titik diwarnai menurut tema, bukan kondisi: warna "Sakit Berat" tidak boleh muncul.
+        $response->assertSee('Tema kegiatan');
+        $response->assertDontSee('#7F1D1D', false);
     }
 
     public function test_authenticated_own_map_still_shows_health_condition(): void

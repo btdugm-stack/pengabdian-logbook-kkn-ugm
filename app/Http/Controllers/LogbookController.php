@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Logbook;
+use App\Support\Export\LogbookExport;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class LogbookController extends Controller
 {
@@ -13,48 +18,39 @@ class LogbookController extends Controller
         return view('logbooks.create');
     }
 
+    public function edit(Logbook $logbook): View
+    {
+        Gate::authorize('update', $logbook);
+
+        return view('logbooks.edit', ['logbook' => $logbook]);
+    }
+
+    public function destroy(Logbook $logbook): RedirectResponse
+    {
+        Gate::authorize('delete', $logbook);
+
+        $wasDraft = $logbook->isDraft();
+        $logbook->delete();
+
+        return redirect()->route('logbooks.index')->with('flash_success', $wasDraft ? 'Draft logbook dihapus.' : 'Logbook dihapus.');
+    }
+
     public function index(): View
     {
         $logbooks = Auth::user()->logbooks()
-            ->with(['theme', 'program', 'activityType', 'location'])
+            ->with(['student', 'theme', 'program', 'activityType', 'location', 'latestReview', 'enteredBy'])
             ->orderByDesc('log_date')
             ->paginate(15);
 
         return view('logbooks.index', ['logbooks' => $logbooks]);
     }
 
-    public function export(): StreamedResponse
+    /** Unduh logbook milik sendiri: ?format=xlsx (bawaan), csv, atau docx. */
+    public function export(Request $request): Response
     {
-        $logbooks = Auth::user()->logbooks()
-            ->with(['theme', 'program', 'activityType', 'location'])
-            ->orderByDesc('log_date')
-            ->get();
+        $format = (string) $request->query('format', 'xlsx');
+        abort_unless(in_array($format, LogbookExport::FORMATS, true), 404);
 
-        $headers = [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename=laporan-logbook-kkn.csv',
-        ];
-
-        return response()->stream(function () use ($logbooks) {
-            $out = fopen('php://output', 'w');
-
-            // Audit §CSV-injection: sel teks user-controlled yang diawali =, +, -, @
-            // bisa dieksekusi sebagai formula oleh Excel/Sheets -> beri prefix apostrof.
-            $cell = fn ($v): string => (is_string($v) && $v !== '' && str_contains('=+-@', $v[0]))
-                ? "'".$v
-                : (string) $v;
-
-            fputcsv($out, ['Tanggal', 'Mahasiswa', 'Tema', 'Program', 'Jenis', 'Lokasi', 'Koordinat', 'Masyarakat Terlibat', 'Kondisi', 'Status', 'Catatan']);
-
-            foreach ($logbooks as $l) {
-                fputcsv($out, [
-                    $l->log_date, $cell($l->student->name), $cell($l->theme->name), $cell($l->program->name), $cell($l->activityType->name),
-                    $cell($l->location->name), $l->location->latitude.','.$l->location->longitude,
-                    $l->community_count, $cell($l->health_status), $cell($l->status), $cell($l->progress_note),
-                ]);
-            }
-
-            fclose($out);
-        }, 200, $headers);
+        return (new LogbookExport($request->user()))->download($format);
     }
 }

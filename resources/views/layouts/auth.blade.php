@@ -2,12 +2,14 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>@yield('title', config('app.name'))</title>
+  <title>@yield('title', 'Logbook KKN UGM')</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#003D7C">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="icon" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="description" content="Presensi harian, logbook kegiatan, dan pemantauan wilayah KKN-PPM Universitas Gadjah Mada.">
+  <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+  <link rel="icon" href="{{ asset('icons/icon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ asset('icons/icon-192.png') }}">
+  <meta name="sw-url" content="{{ asset('sw.js') }}">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,9 +20,9 @@
 <div class="auth-shell">
   <aside class="auth-aside">
     <div class="auth-brand">
-      <div class="logo"><img src="/icons/logo-ugm.png" alt="Logo Universitas Gadjah Mada"></div>
+      <div class="logo"><img src="{{ asset('icons/logo-ugm.png') }}" alt="Logo Universitas Gadjah Mada"></div>
       <div>
-        <h1>Logbook KKN</h1>
+        <h1>Logbook KKN <span class="ea-tag">Early Access</span></h1>
         <p>KKN-PPM Universitas Gadjah Mada</p>
       </div>
     </div>
@@ -50,16 +52,27 @@
 
   <main class="auth-main">
     <div class="auth-card">
+      {{-- Logo ringkas untuk layar sempit, karena panel biru di kiri disembunyikan di bawah 900px. --}}
+      <div class="auth-mobile-brand">
+        <div class="logo"><img src="{{ asset('icons/logo-ugm.png') }}" alt=""></div>
+        <div>
+          <strong>Logbook KKN UGM</strong>
+          <span class="ea-tag">Early Access</span>
+        </div>
+      </div>
+
       @if (session('flash_success'))
-        <div class="alert alert-success">{{ session('flash_success') }}</div>
+        <div class="alert alert-success" role="status">{{ session('flash_success') }}</div>
       @endif
       @if (session('flash_error'))
-        <div class="alert alert-error">{{ session('flash_error') }}</div>
+        <div class="alert alert-error" role="alert">{{ session('flash_error') }}</div>
       @endif
 
       @yield('content')
     </div>
   </main>
 </div>
+{{-- Alpine (dibawa Livewire) dipakai kolom cari-pilih-tambah di form pendaftaran. --}}
+@livewireScripts
 </body>
 </html>

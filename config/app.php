@@ -55,6 +55,13 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Tautan kanal masukan pengguna selama early access (Google Form, WA grup,
+    | mailto:, dsb.). Kosong = tombol "Kirim Masukan" tidak ditampilkan.
+    */
+
+    'feedback_url' => env('FEEDBACK_URL'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

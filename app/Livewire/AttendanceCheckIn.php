@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\HandlesCoordinate;
 use App\Models\DailyAttendance;
 use App\Models\Student;
 use App\Notifications\StudentHealthAlert;
@@ -9,9 +10,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Throwable;
 
 class AttendanceCheckIn extends Component
 {
+    use HandlesCoordinate;
+
     public string $condition = 'Sehat';
 
     public string $condition_note = '';
@@ -48,7 +52,8 @@ class AttendanceCheckIn extends Component
     {
         $this->validate([
             'condition' => 'required|in:Sehat,Sakit Ringan,Sakit Berat,Izin,Alpha',
-            'condition_note' => $this->condition === 'Sehat' ? 'nullable|string' : 'required|string',
+            'condition_note' => $this->condition === 'Sehat' ? 'nullable|string|max:1000' : 'required|string|max:1000',
+            'coordinate' => $this->coordinateRules(),
         ]);
 
         [$lat, $lng] = $this->parseCoordinate($this->coordinate);
@@ -78,10 +83,7 @@ class AttendanceCheckIn extends Component
         // setiap kali form diperbarui dengan kondisi sakit yang sama).
         $isSick = in_array($this->condition, ['Sakit Ringan', 'Sakit Berat'], true);
         if ($isSick && $this->condition !== $previousCondition) {
-            $recipients = Student::supervisorsFor($student);
-            if ($recipients->isNotEmpty()) {
-                Notification::send($recipients, new StudentHealthAlert($attendance));
-            }
+            $this->notifySupervisors($student, $attendance);
         }
 
         unset($this->today, $this->history);
@@ -93,29 +95,33 @@ class AttendanceCheckIn extends Component
         $today = $this->today;
         abort_unless($today, 404);
 
-        $today->update(['check_out_time' => now()]);
+        if (! $today->check_out_time) {
+            $today->update(['check_out_time' => now()]);
+        }
 
         unset($this->today, $this->history);
         session()->flash('flash_success', 'Check-out berhasil dicatat.');
     }
 
-    /** @return array{0: ?float, 1: ?float} */
-    private function parseCoordinate(string $coordinate): array
+    /**
+     * Presensi sudah tersimpan saat ini dipanggil - gangguan SMTP tidak boleh
+     * membuat mahasiswa melihat error dan mengira presensinya gagal. Notifikasi
+     * database dikirim lebih dulu (lihat StudentHealthAlert::via) sehingga
+     * supervisor tetap melihatnya di aplikasi walau email gagal.
+     */
+    private function notifySupervisors(Student $student, DailyAttendance $attendance): void
     {
-        $coordinate = trim($coordinate);
-        if ($coordinate === '') {
-            return [null, null];
+        $recipients = Student::supervisorsFor($student);
+
+        if ($recipients->isEmpty()) {
+            return;
         }
 
-        $parts = array_map('trim', explode(',', $coordinate));
-        if (count($parts) !== 2) {
-            return [null, null];
+        try {
+            Notification::send($recipients, new StudentHealthAlert($attendance));
+        } catch (Throwable $e) {
+            report($e);
         }
-
-        return [
-            is_numeric($parts[0]) ? (float) $parts[0] : null,
-            is_numeric($parts[1]) ? (float) $parts[1] : null,
-        ];
     }
 
     public function render()

@@ -44,7 +44,16 @@ class AssistAttendanceList extends Component
 
         // Hanya host (pemilik program yang dibantu) yang boleh menyetujui/menolak -
         // ditegakkan di sini, bukan cuma disembunyikan di tombol UI.
-        abort_unless($assist->host_student_id === Auth::id(), 403);
+        abort_unless((int) $assist->host_student_id === (int) Auth::id(), 403);
+
+        // Keputusan bersifat final - aksi ganda (klik dobel / tab lain) tidak
+        // boleh membalik status yang sudah disetujui atau ditolak.
+        if ($assist->approval_status !== 'Menunggu') {
+            unset($this->pendingApproval);
+            session()->flash('flash_error', "Presensi bantuan ini sudah {$assist->approval_status}.");
+
+            return;
+        }
 
         $assist->update(['approval_status' => $status]);
 

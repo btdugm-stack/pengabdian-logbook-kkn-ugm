@@ -2,8 +2,12 @@
 // ini membuat app shell instalable dan aset statis bisa dibaca offline,
 // TAPI TIDAK mengantrekan submit presensi/logbook Livewire saat offline
 // (lihat offline-banner di layouts/app.blade.php untuk itu).
-const CACHE_NAME = 'logbook-kkn-v2';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'logbook-kkn-v3';
+
+// Aplikasi bisa dipasang di subpath (mis. /pengabdian-kkn/), jadi semua path
+// dihitung dari scope service worker ini, bukan dari root domain.
+const BASE = new URL(self.registration.scope).pathname;
+const OFFLINE_URL = BASE + 'offline.html';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -26,14 +30,17 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   // Aset build (CSS/JS/font hasil Vite) dan ikon: cache-first, karena nama
   // filenya sudah di-fingerprint per versi sehingga aman disimpan lama.
-  if (url.pathname.startsWith('/build/') || url.pathname.startsWith('/icons/')) {
+  if (url.pathname.startsWith(BASE + 'build/') || url.pathname.startsWith(BASE + 'icons/')) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
         return res;
       }))
     );

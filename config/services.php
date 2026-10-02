@@ -39,7 +39,13 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
-        'allowed_domain' => env('GOOGLE_ALLOWED_DOMAIN'),
+        // Satu atau beberapa domain dipisah koma. Mahasiswa UGM memakai
+        // @mail.ugm.ac.id sedangkan dosen/tendik @ugm.ac.id - keduanya perlu
+        // didaftarkan: GOOGLE_ALLOWED_DOMAIN=ugm.ac.id,mail.ugm.ac.id
+        'allowed_domains' => array_values(array_filter(array_map(
+            fn (string $domain) => strtolower(trim($domain)),
+            explode(',', (string) env('GOOGLE_ALLOWED_DOMAIN', '')),
+        ))),
     ],
 
 ];

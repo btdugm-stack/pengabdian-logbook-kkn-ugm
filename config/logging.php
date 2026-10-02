@@ -70,6 +70,9 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),
+            // Log ditulis oleh dua user: PHP-FPM (www-data) dan artisan/cron
+            // (pemilik folder). Tanpa group-write, yang kedua gagal menulis.
+            'permission' => 0664,
             'replace_placeholders' => true,
         ],
 

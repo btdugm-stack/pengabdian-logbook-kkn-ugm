@@ -40,7 +40,6 @@ class StudentSeeder extends Seeder
             ['email' => 'kormasit.5a@demo.kkn', 'name' => 'Koordinator Mahasiswa Sub-unit 5A', 'role' => 'kormasit', 'region' => $subUnit('Sub-unit 5A')],
             ['email' => 'korcam.cangkringan@demo.kkn', 'name' => 'Koordinator Kecamatan Cangkringan', 'role' => 'korcam', 'region' => $desa('Desa Wukirsari')],
             ['email' => 'dpl@demo.kkn', 'name' => 'Dosen Pembimbing Lapangan Demo', 'role' => 'dpl', 'region' => $kabupaten('Kabupaten Sleman')],
-            ['email' => 'she@demo.kkn', 'name' => 'Admin SHE Demo', 'role' => 'admin_she', 'region' => null],
             ['email' => 'lppm@demo.kkn', 'name' => 'Admin LPPM Demo', 'role' => 'admin_lppm', 'region' => null],
         ];
 

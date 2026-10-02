@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Logbook;
+
 /**
  * Satu tempat untuk memetakan kondisi kesehatan (Sehat/Sakit Ringan/Sakit
  * Berat/Izin/Alpha) ke warna & pill - dipakai oleh Logbook dan
@@ -15,6 +17,7 @@ class ConditionPresentation
         return match ($condition) {
             'Sakit Ringan', 'Sakit Berat' => 'pill-sick',
             'Izin', 'Alpha' => 'pill-warn',
+            Logbook::HEALTH_UNKNOWN => 'pill-info',
             default => 'pill-normal',
         };
     }
@@ -25,6 +28,7 @@ class ConditionPresentation
             'Sakit Berat' => '#7F1D1D',
             'Sakit Ringan' => '#E11D48',
             'Izin', 'Alpha' => '#D97706',
+            Logbook::HEALTH_UNKNOWN => '#64748B',
             default => '#059669',
         };
     }

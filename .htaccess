@@ -1,0 +1,53 @@
+# Folder proyek ini berada di bawah DocumentRoot Apache, jadi tanpa berkas ini
+# .env, client_secret.json, .git/, storage/logs dll. bisa diunduh langsung.
+# Hanya berkas di public/ yang dilayani apa adanya; semua permintaan lain
+# (termasuk ke berkas rahasia tadi) masuk ke front controller Laravel.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Pasangan DirectorySlash Off di bawah: aturan tetap jalan untuk URL folder tanpa "/" di akhir.
+    RewriteOptions AllowNoSlash
+
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    RewriteRule ^index\.php$ - [L]
+
+    # BASE = subpath tempat proyek dipasang (mis. /search/logbook-kkn),
+    # dihitung dari URL supaya berkas ini tidak terikat satu lokasi.
+    RewriteCond %{REQUEST_URI}::$1 ^(/.+)/(.*)::\2$
+    RewriteRule ^(.*)$ - [E=BASE:%1]
+
+    RewriteCond %{DOCUMENT_ROOT}%{ENV:BASE}/public/$1 -f
+    RewriteRule ^(.+)$ public/$1 [L]
+
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Tanpa mod_rewrite pengalihan di atas tidak jalan: tutup total daripada bocor.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>
+
+Options -Indexes
+
+# Tanpa ini Apache mengalihkan ".../logbook-kkn" ke ".../logbook-kkn/" memakai
+# prefix internal, yang di alamat publik mengarah ke aplikasi lain.
+DirectorySlash Off
+
+# Alamat publik aplikasi ini adalah https://search.ugm.ac.id/ai/logbook-kkn:
+# proxy nginx di depan memetakan /ai/... ke /search/... di server ini.
+# index.php memakai nilai ini untuk mengembalikan prefix publiknya.
+<IfModule mod_setenvif.c>
+    SetEnvIf X-Forwarded-Host "^search\.ugm\.ac\.id$" APP_PUBLIC_PREFIX=/ai/logbook-kkn
+</IfModule>
+
+# Apache di server ini memakai mod_php 8.1 untuk aplikasi lain, sedangkan
+# Laravel 13 butuh PHP >= 8.3. Hanya folder ini yang dialihkan ke PHP-FPM 8.3.
+<IfModule proxy_fcgi_module>
+    <FilesMatch "\.php$">
+        SetHandler "proxy:unix:/run/php/php8.3-fpm.sock|fcgi://localhost"
+    </FilesMatch>
+</IfModule>

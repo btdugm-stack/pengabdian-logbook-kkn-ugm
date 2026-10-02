@@ -19,7 +19,7 @@ class PublicSearchController extends Controller
         $q = trim((string) $request->get('q', ''));
         $faculty = trim((string) $request->get('faculty', ''));
 
-        $students = Student::role('mahasiswa')
+        $students = Student::participants()
             ->select(['id', 'name', 'faculty', 'study_program', 'region_id'])
             ->with('region')
             ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
@@ -35,9 +35,9 @@ class PublicSearchController extends Controller
             'students' => $students,
             'q' => $q,
             'faculty' => $faculty,
-            'faculties' => Student::role('mahasiswa')->whereNotNull('faculty')->where('faculty', '<>', '')
+            'faculties' => Student::participants()->whereNotNull('faculty')->where('faculty', '<>', '')
                 ->distinct()->orderBy('faculty')->pluck('faculty'),
-            'totalAll' => Student::role('mahasiswa')->count(),
+            'totalAll' => Student::participants()->count(),
         ]);
     }
 
@@ -46,7 +46,7 @@ class PublicSearchController extends Controller
         $q = trim((string) $request->get('q', ''));
         $studentId = $request->get('student', '');
 
-        $logbooks = Logbook::query()
+        $logbooks = Logbook::visibleToPublic()
             ->with(['student', 'theme', 'program', 'activityType', 'location'])
             ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
                 ->whereHas('student', fn ($s) => $s->where('name', 'like', $this->likePattern($q))->orWhere('faculty', 'like', $this->likePattern($q))->orWhere('study_program', 'like', $this->likePattern($q)))
@@ -64,7 +64,7 @@ class PublicSearchController extends Controller
             'logbooks' => $logbooks,
             'q' => $q,
             'studentId' => $studentId,
-            'students' => Student::role('mahasiswa')->orderBy('name')->get(['id', 'name']),
+            'students' => Student::participants()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
